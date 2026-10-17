@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calcul mental — CE1</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; background: #f4f4f4; padding: 40px 24px 80px; color: #1a1a1a; }
+  h1 { text-align: center; margin-bottom: 6px; }
+  p.sub { text-align: center; color: #666; margin-top: 0; margin-bottom: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; max-width: 900px; margin: 0 auto; }
+  .card { display: flex; flex-direction: column; gap: 8px; padding: 22px 24px; border-radius: 12px; border: 3px solid var(--c);
+    background: color-mix(in srgb, var(--c) 10%, white); text-decoration: none; color: inherit; transition: transform .15s; }
+  .card:hover { transform: translateY(-3px); }
+  .card h2 { margin: 0; font-size: 1.35rem; }
+  .card .tag { font-size: .95rem; font-weight: 600; color: var(--c); }
+  .card ul { margin: 4px 0 0; padding-left: 18px; font-size: .92rem; line-height: 1.5; color: #333; }
+  .card .go { margin-top: auto; padding-top: 10px; font-weight: bold; color: var(--c); }
+  .note { max-width: 900px; margin: 30px auto 0; font-size: .88rem; color: #666; line-height: 1.5; text-align: center; }
+  footer { max-width: 900px; margin: 26px auto 0; text-align: center; font-size: .8rem; color: #888; }
+  footer a { color: #888; }
+</style>
+</head>
+<body>
+<h1>Calcul mental — CE1</h1>
+<p class="sub">Générateurs de fiches : une fiche nouvelle à chaque clic, avec son corrigé.</p>
+
+<div class="grid">
+  <a class="card" href="generateur_grilles.html" style="--c:#1F6FE0">
+    <h2>Générateur de grilles</h2>
+    <span class="tag">Entraînement de la classe — avec chrono</span>
+    <ul>
+      <li>Table stricte, terme manquant, soustraction associée (sans passage, avec passage, mélange)</li>
+      <li>Défis vitesse et blocs uniques de 40 calculs</li>
+      <li>Doubles, presque-doubles, tables de multiplication</li>
+      <li>Chrono par bloc, vérification sur écran</li>
+    </ul>
+    <span class="go">Ouvrir →</span>
+  </a>
+  <a class="card" href="generateur_soutien.html" style="--c:#2E8B57">
+    <h2>Générateur de soutien</h2>
+    <span class="tag">Fiches adaptées — sans chrono</span>
+    <ul>
+      <li>Mêmes notions, 26 calculs (8 + 8 + 10), écriture plus grande</li>
+      <li>Petits nombres d'abord (jusqu'à 29, 49 ou 99)</li>
+      <li>Coup de pouce avec la technique et tableau des nombres</li>
+      <li>Doubles, presque-doubles, moitiés</li>
+    </ul>
+    <span class="go">Ouvrir →</span>
+  </a>
+</div>
+
+<p class="note">Imprimer, ou télécharger chaque fiche en HTML ou en PDF. Aucun compte, aucune donnée personnelle collectée (simple comptage anonyme des visites) : tout fonctionne dans le navigateur.</p>
+<footer>Contenu sous licence <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr">CC BY-NC-SA 4.0</a> · jsPDF (MIT)</footer>
+
+<script data-goatcounter="https://euryale.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
