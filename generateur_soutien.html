@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Générateur de fiches de soutien — Calcul mental CE1</title>
+<style>
+:root { --navy: #14315C; --blue: #1F6FE0; --bg-page: #FBFBFE; --red: #C00000; --green: #1F8A3C; --grey: #D9D9D9; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --navy: #DCE6F5; --blue: #6EA8F5; --bg-page: #14171C; } }
+:root[data-theme="dark"] { --navy: #DCE6F5; --blue: #6EA8F5; --bg-page: #14171C; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Times New Roman", Georgia, serif; background: var(--bg-page); color: #111; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { color: #eee; } }
+.controls { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.field select, .field input[type=number] { font-family: Arial, sans-serif; font-size: 14px; padding: 6px 8px; border: 1px solid #999; border-radius: 6px; background: white; color: #111; }
+.field.check { flex-direction: row; align-items: center; gap: 6px; }
+button { font-family: Arial, sans-serif; font-size: 14px; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--blue); background: var(--blue); color: white; cursor: pointer; }
+button.secondary { background: white; color: var(--blue); }
+.note { font-family: Arial, sans-serif; font-size: 12.5px; color: #666; max-width: 900px; margin: -6px auto 0; padding: 0 16px; }
+.sheet { max-width: 900px; margin: 0 auto; padding: 16px; background: white; color: #111; }
+table.head { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+table.head td { border: 2px solid #000; padding: 8px 12px; font-weight: bold; font-size: 16px; }
+.titre { text-align: center; font-weight: bold; font-size: 20px; color: #14315C; padding: 6px; border: 2px solid #000; border-top: none; }
+.objectif { text-align: center; font-size: 14px; margin: 8px 0 2px; }
+.consigne { text-align: center; font-size: 14px; font-weight: bold; margin: 0 0 10px; }
+.pouce { border: 2px solid #000; border-radius: 6px; padding: 8px 14px; margin: 8px 0 10px; font-size: 15px; line-height: 1.45; }
+.pouce b { font-weight: bold; }
+table.tableau { border-collapse: collapse; margin: 6px auto 4px; }
+table.tableau td { border: 1px solid #000; width: 1.15cm; height: 0.75cm; text-align: center; font-size: 14px; }
+table.tableau td.diz { background: var(--grey); font-weight: bold; }
+.section-title { font-weight: bold; font-size: 16px; color: #14315C; margin: 16px 0 6px; font-family: "Times New Roman", serif; }
+.mini-btn { font-family: Arial, sans-serif; font-size: 11px; padding: 2px 8px; margin-left: 8px; border-radius: 10px; }
+.mini-score { font-family: Arial, sans-serif; font-size: 13px; margin-left: 8px; color: #14315C; font-weight: bold; }
+table.grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.grid td { border: 1px solid #000; text-align: center; font-size: 21px; height: 1.35cm; padding: 0 6px; }
+.ans { font-family: "Times New Roman", serif; font-size: 21px; width: 3em; text-align: center; border: none; border-bottom: 1.5px solid #333; background: transparent; color: inherit; }
+.ans.correct { color: var(--green); font-weight: bold; border-bottom-color: var(--green); }
+.ans.wrong { color: var(--red); font-weight: bold; border-bottom-color: var(--red); background: rgba(192,0,0,.08); }
+.corrige-blank { font-weight: bold; text-decoration: underline; }
+@media print {
+  .controls, .note, .mini-btn, .mini-score { display: none !important; }
+  body { background: white; }
+  .sheet { max-width: none; padding: 4px; }
+  .ans { border-bottom: 1px solid #333; }
+  table.tableau td.diz { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { size: A4 portrait; margin: 9mm; }
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="controls">
+  <div class="field">
+    <label>Type de fiche (soutien adapté, sans chrono)</label>
+    <select id="type">
+      <option value="soutien_table_stricte">Table stricte (sans/avec passage + mélange)</option>
+      <option value="soutien_terme_manquant">Terme manquant</option>
+      <option value="soutien_soustraction_associee">Soustraction associée</option>
+      <option value="soutien_doubles">Doubles (jusqu'à N)</option>
+      <option value="soutien_presque_doubles">Presque-doubles (jusqu'à N)</option>
+      <option value="soutien_moities">Moitiés (nombres pairs jusqu'à N)</option>
+    </select>
+  </div>
+  <div class="field">
+    <label id="labelN">Table / N</label>
+    <input type="number" id="tableN" value="5" min="1" max="20" style="width:70px">
+  </div>
+  <div class="field" id="maxWrap">
+    <label>Nombres jusqu'à</label>
+    <select id="maxNb"><option value="29">29</option><option value="49" selected>49</option><option value="99">99</option></select>
+  </div>
+  <div class="field check"><input type="checkbox" id="pouce" checked><label for="pouce">Coup de pouce</label></div>
+  <div class="field check"><input type="checkbox" id="tableau" checked><label for="tableau">Tableau des nombres</label></div>
+  <div class="field check"><input type="checkbox" id="corrige"><label for="corrige">Corrigé</label></div>
+  <button id="btnGen">Générer une nouvelle fiche</button>
+  <button id="btnPrint" class="secondary">Imprimer</button>
+  <button id="btnDownload" class="secondary">Télécharger (HTML)</button>
+  <button id="btnDownloadPdf" class="secondary">Télécharger en PDF</button>
+</div>
+<p class="note">Même logique que le générateur de grilles, en version adaptée : 26 calculs (8 + 8 + 10), écriture plus grande, petits nombres d'abord, coup de pouce avec la technique et tableau des nombres. Pas de chrono. Le nom du type (soutien_…) est celui à choisir dans l'outil de saisie.</p>
+
+<div class="sheet" id="sheet"></div>
+
+<script>
+function mulberry32(seed) { return function () { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function shuffle(rng, arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const MINUS = '−';
+const NB = [8, 8, 10];   // calculs par bloc
+
+// ---------- tirage : a = nombre de départ ; sans passage = unité de a + unité de N < 10 ----------
+function passe(a, N) { return (a % 10) + (N % 10) >= 10; }
+function pickNumbers(rng, N, avec, k, max, used, smallFirst) {
+  const small = [], big = [];
+  const ok = a => a !== N && (N % 10 === 0 || passe(a, N) === avec);
+  for (let a = 2; a + N <= max; a++) { if (used.has(a) || !ok(a)) continue; (a + N <= 20 ? small : big).push(a); }
+  const nSmall = smallFirst ? Math.min(small.length, Math.ceil(k / 2)) : Math.min(small.length, Math.floor(k / 4));
+  const out = [...shuffle(rng, small).slice(0, nSmall), ...shuffle(rng, big).slice(0, k - nSmall)];
+  if (out.length < k) {   // réserve épuisée (ex. table de 9 sans passage jusqu'à 49) : on reprend des nombres déjà vus, sans doublon dans le bloc si possible
+    const all = []; for (let a = 2; a + N <= max; a++) if (ok(a)) all.push(a);
+    const fresh = shuffle(rng, all.filter(x => !out.includes(x))); out.push(...fresh.slice(0, k - out.length));
+    while (out.length < k && all.length) out.push(all[Math.floor(rng() * all.length)]);
+  }
+  out.forEach(x => used.add(x));
+  return out;
+}
+function itemStrict(a, N, i) { return i % 3 === 2 ? { prefix: N + ' + ' + a + ' = ', suffix: '', answer: String(a + N) } : { prefix: a + ' + ' + N + ' = ', suffix: '', answer: String(a + N) }; }
+function itemTM(a, N, i) { return (i + Math.floor(i / 2)) % 2 === 1 ? { prefix: '', suffix: ' + ' + N + ' = ' + (a + N), answer: String(a) } : { prefix: N + ' + ', suffix: ' = ' + (a + N), answer: String(a) }; }
+function itemSub(a, N) { return { prefix: (a + N) + ' ' + MINUS + ' ' + N + ' = ', suffix: '', answer: String(a) }; }
+function itemDouble(n) { return { prefix: 'double de ' + n + ' = ', suffix: '', answer: String(2 * n) }; }
+function itemPresque(n, rng) { const sw = rng() < 0.5; const a = sw ? n + 1 : n, b = sw ? n : n + 1; return { prefix: a + ' + ' + b + ' = ', suffix: '', answer: String(a + b) }; }
+function itemMoitie(n) { return { prefix: 'moitié de ' + n + ' = ', suffix: '', answer: String(n / 2) }; }
+
+function buildTable(type, N, max, rng) {
+  const used = new Set(), mk = type === 'soutien_table_stricte' ? itemStrict : type === 'soutien_terme_manquant' ? itemTM : itemSub;
+  const sub = type === 'soutien_soustraction_associee';
+  const lab = sub ? ['1. Sans emprunt', '2. Avec emprunt'] : ['1. Sans passage de dizaine', '2. Avec passage de dizaine'];
+  let s1, s2, s3;
+  if (N % 10 === 0) {   // ±10 : pas de passage ; on progresse par la taille des nombres
+    const pool = []; for (let a = 1; a + N <= max; a++) pool.push(a);
+    const sh = shuffle(rng, pool), lo = sh.filter(a => a + N <= Math.min(40, max)), hi = sh.filter(a => a + N > Math.min(40, max));
+    s1 = lo.slice(0, NB[0]); s2 = (hi.length >= NB[1] ? hi : sh.filter(a => !s1.includes(a))).slice(0, NB[1]);
+    s3 = shuffle(rng, sh.filter(a => !s1.includes(a) && !s2.includes(a))).slice(0, NB[2]);
+    lab[0] = '1. Petits nombres'; lab[1] = '2. Grands nombres';
+  } else {
+    s1 = pickNumbers(rng, N, false, NB[0], max, used, true);
+    s2 = pickNumbers(rng, N, true, NB[1], max, used, true);
+    s3 = shuffle(rng, [...pickNumbers(rng, N, false, NB[2] / 2, max, used, false), ...pickNumbers(rng, N, true, NB[2] / 2, max, used, false)]);
+  }
+  return [
+    { title: lab[0], items: s1.map((a, i) => mk(a, N, i)) },
+    { title: lab[1], items: s2.map((a, i) => mk(a, N, i)) },
+    { title: '3. Mélange', items: s3.map((a, i) => mk(a, N, i)) },
+  ];
+}
+function spread(rng, pool, k) { const out = []; while (out.length < k) out.push(...shuffle(rng, pool)); return out.slice(0, k); }
+function buildDM(type, N, rng) {
+  if (type === 'soutien_moities') {
+    const ev = n => { const p = []; for (let i = 2; i <= n; i += 2) p.push(i); return p; };
+    const lo = ev(Math.min(10, N)), hi = ev(N).filter(x => x > 10);
+    return [
+      { title: "1. Moitiés jusqu'à 10", items: spread(rng, lo, NB[0]).map(itemMoitie) },
+      { title: '2. Moitiés jusqu’à ' + N, items: spread(rng, hi.length ? hi : lo, NB[1]).map(itemMoitie) },
+      { title: '3. Mélange', items: spread(rng, ev(N), NB[2]).map(itemMoitie) },
+    ];
+  }
+  const top = type === 'soutien_presque_doubles' ? N - 1 : N, mid = Math.min(5, top);
+  const rg = (a, b) => { const p = []; for (let i = a; i <= b; i++) p.push(i); return p; };
+  const mk = type === 'soutien_doubles' ? (n => itemDouble(n)) : (n => itemPresque(n, rng));
+  return [
+    { title: '1. Jusqu’à ' + mid, items: spread(rng, rg(1, mid), NB[0]).map(mk) },
+    { title: '2. De ' + (mid + 1) + ' à ' + top, items: spread(rng, rg(mid + 1, Math.max(mid + 1, top)), NB[1]).map(mk) },
+    { title: '3. Mélange', items: spread(rng, rg(1, top), NB[2]).map(mk) },
+  ];
+}
+
+// ---------- coup de pouce : la technique, avec des exemples tirés hors de la fiche ----------
+function coupDePouce(type, N) {
+  const u = N % 10, x = u <= 8 ? 1 : 0;
+  if (type === 'soutien_table_stricte') {
+    if (u === 0) return [['Je ne change que les dizaines.', ''], ['Exemple : ', '23 + ' + N + ' → 2 dizaines + ' + N / 10 + ' dizaine' + (N > 10 ? 's' : '') + ', les unités ne bougent pas → ' + (23 + N) + '.']];
+    if (N > 10) return [['J’ajoute d’abord la dizaine, puis les unités.', ''], ['Exemple : ', '23 + ' + N + ' → 23 + 10 = 33, puis 33 + ' + u + ' = ' + (33 + u) + '.']];
+    if (N === 1) return [['+ 1, c’est le nombre qui vient juste après.', ''], ['Exemple : ', '29 + 1 → après 29 vient 30.']];
+    const a = 21 - u;   // N=5 : 16 + 5 → 16 + 4 = 20, puis + 1
+    return [['Je pars du grand nombre et j’avance de ' + N + '.', ''],
+      ['Je passe par la dizaine. ', a + ' + ' + N + ' → ' + a + ' + ' + (20 - a) + ' = 20, puis + ' + (N - (20 - a)) + ' = ' + (a + N) + '.'],
+      ['Je regarde les unités. ', x + ' + ' + N + ' = ' + (x + N) + ', donc ' + (20 + x) + ' + ' + N + ' = ' + (20 + x + N) + '.']];
+  }
+  if (type === 'soutien_terme_manquant') {
+    if (u === 0) return [['Je cherche combien il faut ajouter à ' + N + '.', ''], ['Exemple : ', N + ' + ____ = ' + (N + 17) + ' → il manque 1 dizaine et 7 unités → ' + 17 + '.']];
+    const t1 = 13, t2 = N + 11;
+    return [['Je cherche combien il faut ajouter à ' + N + '.', ''],
+      ['Je passe par 10. ', N + ' + ____ = ' + (10 + (t1 - 10)) + ' → de ' + N + ' à 10 : ' + (10 - N > 0 ? 10 - N : 0) + ' ; de 10 à ' + t1 + ' : ' + (t1 - 10) + ' ; ensemble ' + (t1 - N) + '.'],
+      ['Je pense à l’addition. ', '____ + ' + N + ' = ' + t2 + ' : quel nombre + ' + N + ' fait ' + t2 + ' ? ' + (t2 - N) + ' + ' + N + ' = ' + t2 + ', donc ' + (t2 - N) + '.']].filter(r => N < 10 || r[0] !== 'Je passe par 10. ');
+  }
+  if (type === 'soutien_soustraction_associee') {
+    if (u === 0) return [['Je retire des dizaines : les unités ne bougent pas.', ''], ['Exemple : ', '47 ' + MINUS + ' ' + N + ' → 4 dizaines ' + MINUS + ' ' + N / 10 + ' → ' + (47 - N) + '.']];
+    if (N > 10) return [['Je retire d’abord la dizaine, puis les unités.', ''], ['Exemple : ', '35 ' + MINUS + ' ' + N + ' → 35 ' + MINUS + ' 10 = 25, puis 25 ' + MINUS + ' ' + u + ' = ' + (25 - u) + '.']];
+    if (N === 1) return [['− 1, c’est le nombre qui vient juste avant.', ''], ['Exemple : ', '30 ' + MINUS + ' 1 → juste avant 30, il y a 29.']];
+    const s = 20 + u - 1, r1 = s % 10;   // N=5 : 24 − 4 = 20, puis − 1
+    return [['Je recule de ' + N + '.', ''],
+      ['Je passe par la dizaine. ', s + ' ' + MINUS + ' ' + N + ' → ' + s + ' ' + MINUS + ' ' + r1 + ' = 20, puis ' + MINUS + ' ' + (N - r1) + ' = ' + (s - N) + '.'],
+      ['Je pense à l’addition. ', (s - N) + ' + ' + N + ' = ' + s + ', donc ' + s + ' ' + MINUS + ' ' + N + ' = ' + (s - N) + '.']];
+  }
+  if (type === 'soutien_doubles') return [['Le double, c’est le nombre + le même nombre.', ''], ['Je décompose. ', 'double de 7 = double de 5 + double de 2 = 10 + 4 = 14.'], ['Avec les doigts : ', 'double de 3 = 3 doigts + 3 doigts = 6.']];
+  if (type === 'soutien_presque_doubles') return [['Je cherche le double caché.', ''], ['Exemple : ', '6 + 7 → double de 6 = 12, et 1 de plus : 13.'], ['Ou : ', '6 + 7 → double de 7 = 14, et 1 de moins : 13.']];
+  return [['La moitié, c’est partager en 2 parts égales.', ''], ['Exemple : ', 'moitié de 8 → 4 et 4 → 4.'], ['Je décompose. ', 'moitié de 16 = moitié de 10 + moitié de 6 = 5 + 3 = 8.']];
+}
+
+function renderHead(obj, cons) {
+  return '<table class="head"><tr><td style="width:55%">Prénom : </td><td>Date : </td></tr></table><div class="titre">CALCUL MENTAL</div>' +
+    '<div class="objectif">' + obj + '</div><div class="consigne">' + cons + '</div>';
+}
+function renderTableau(max) {
+  const rows = Math.min(10, Math.ceil((max + 1) / 10));
+  let h = '<table class="tableau">';
+  for (let d = 0; d < rows; d++) { h += '<tr>'; for (let u = 0; u < 10; u++) { const n = d * 10 + u; h += '<td class="' + (u === 0 ? 'diz' : '') + '">' + n + '</td>'; } h += '</tr>'; }
+  return h + '</table>';
+}
+function renderGrid(items, showCorrige, idx) {
+  let h = '<table class="grid">';
+  for (let r = 0; r < Math.ceil(items.length / 2); r++) {
+    h += '<tr>';
+    for (let c = 0; c < 2; c++) {
+      const it = items[r * 2 + c];
+      if (!it) { h += '<td></td>'; continue; }
+      h += '<td>' + it.prefix + (showCorrige ? '<span class="corrige-blank">' + it.answer + '</span>' : '<input type="text" inputmode="numeric" autocomplete="off" class="ans" data-section="' + idx + '" data-answer="' + it.answer + '">') + it.suffix + '</td>';
+    }
+    h += '</tr>';
+  }
+  return h + '</table>';
+}
+const OBJ = {
+  soutien_table_stricte: N => 'OBJECTIF : table de +' + N + ' (a + ' + N + ' et ' + N + ' + a).',
+  soutien_terme_manquant: N => 'OBJECTIF : trouver le nombre qui manque dans la table de +' + N + '.',
+  soutien_soustraction_associee: N => 'OBJECTIF : soustraire ' + N + '.',
+  soutien_doubles: N => 'OBJECTIF : connaître les doubles jusqu’à ' + N + '.',
+  soutien_presque_doubles: N => 'OBJECTIF : calculer les presque-doubles jusqu’à ' + N + '.',
+  soutien_moities: N => 'OBJECTIF : trouver la moitié des nombres pairs jusqu’à ' + N + '.',
+};
+const JUSQUA = ['soutien_doubles', 'soutien_presque_doubles', 'soutien_moities'];
+let last = null;
+function generate(newSeed) {
+  const type = document.getElementById('type').value, N = Math.max(1, parseInt(document.getElementById('tableN').value, 10) || 5);
+  const max = parseInt(document.getElementById('maxNb').value, 10), showC = document.getElementById('corrige').checked;
+  const withPouce = document.getElementById('pouce').checked, withTab = document.getElementById('tableau').checked;
+  if (newSeed || !last || last.type !== type || last.N !== N || last.max !== max) {
+    const rng = mulberry32(Math.floor(Math.random() * 1e6));
+    last = { type, N, max, sections: JUSQUA.includes(type) ? buildDM(type, N, rng) : buildTable(type, N, max, rng) };
+  }
+  last.showC = showC; last.withPouce = withPouce && !showC; last.withTab = withTab && !showC && !JUSQUA.includes(type);
+  last.obj = OBJ[type](N); last.pouce = coupDePouce(type, N);
+  const total = last.sections.reduce((s, x) => s + x.items.length, 0);
+  last.cons = total + ' calculs — sans chrono. Je prends mon temps.';
+  let h = renderHead((showC ? 'CORRIGÉ — ' : '') + last.obj, last.cons);
+  if (last.withPouce) h += '<div class="pouce">' + last.pouce.map((l, i) => (i === 0 ? '<b>Coup de pouce : </b>' + l[0] : '<b>' + l[0] + '</b>' + l[1])).join('<br>') + '</div>';
+  if (last.withTab) h += renderTableau(max);
+  last.sections.forEach((s, i) => {
+    h += '<div class="section-title">' + s.title + '<button type="button" class="mini-btn secondary" data-verify="' + i + '">✓ Vérifier</button><span class="mini-score" id="score_' + i + '"></span></div>';
+    h += renderGrid(s.items, showC, i);
+  });
+  document.getElementById('sheet').innerHTML = h;
+}
+document.getElementById('sheet').addEventListener('click', e => {
+  const b = e.target.closest('button[data-verify]'); if (!b) return;
+  const idx = b.dataset.verify; let ok = 0, tot = 0;
+  document.querySelectorAll('#sheet input.ans[data-section="' + idx + '"]').forEach(inp => {
+    tot++; inp.classList.remove('correct', 'wrong'); const v = inp.value.trim(); if (!v) return;
+    if (v === inp.dataset.answer) { inp.classList.add('correct'); ok++; } else inp.classList.add('wrong');
+  });
+  document.getElementById('score_' + idx).textContent = ok + ' / ' + tot;
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.matches || !e.target.matches('input.ans')) return; e.preventDefault();
+  const L = Array.from(document.querySelectorAll('#sheet input.ans')), i = L.indexOf(e.target); if (i >= 0 && i < L.length - 1) { L[i + 1].focus(); L[i + 1].select(); }
+});
+function syncLabels() {
+  const t = document.getElementById('type').value, j = JUSQUA.includes(t);
+  document.getElementById('labelN').textContent = j ? 'Jusqu’à' : 'Table / N';
+  document.getElementById('maxWrap').style.display = j ? 'none' : '';
+  const n = document.getElementById('tableN');
+  if (j && +n.value < 6) n.value = t === 'soutien_moities' ? 20 : 10;
+  if (!j && +n.value > 20) n.value = 5;
+}
+document.getElementById('type').addEventListener('change', () => { syncLabels(); generate(true); });
+document.getElementById('tableN').addEventListener('change', () => generate(true));
+document.getElementById('maxNb').addEventListener('change', () => generate(true));
+['pouce', 'tableau', 'corrige'].forEach(id => document.getElementById(id).addEventListener('change', () => generate(false)));
+document.getElementById('btnGen').addEventListener('click', () => generate(true));
+document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
+async function saveFile(filename, data, mimeType) {
+  if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function') { const d = await claude.use('downloads'); if (d) { await d.save({ filename, data }); return; } }
+  const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+document.getElementById('btnDownload').addEventListener('click', () => {
+  const doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Soutien-' + last.type + '-' + last.N + '</title>' + document.querySelector('style').outerHTML + '</head><body><div class="sheet">' + document.getElementById('sheet').innerHTML + '</div></body></html>';
+  saveFile('Soutien-' + last.type + '-' + last.N + '.html', doc, 'text/html');
+});
+document.getElementById('btnDownloadPdf').addEventListener('click', () => {
+  if (typeof window.jspdf === 'undefined') { alert('Bibliothèque PDF non chargée (connexion internet ?). Utiliser « Imprimer » puis « Enregistrer en PDF ».'); return; }
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: 'mm', format: 'a4' }), X = 10, W = 190; let y = 10;
+  doc.setLineWidth(0.4); doc.setFont('times', 'bold'); doc.setFontSize(12);
+  doc.rect(X, y, W * 0.55, 9); doc.rect(X + W * 0.55, y, W * 0.45, 9); doc.text('Prénom :', X + 2, y + 6); doc.text('Date :', X + W * 0.55 + 2, y + 6); y += 9;
+  doc.rect(X, y, W, 9); doc.setFontSize(15); doc.text('CALCUL MENTAL', 105, y + 6.3, { align: 'center' }); y += 15;
+  doc.setFont('times', 'normal'); doc.setFontSize(11); doc.text((last.showC ? 'CORRIGÉ — ' : '') + last.obj, 105, y, { align: 'center' }); y += 5;
+  doc.setFont('times', 'bold'); doc.text(last.cons, 105, y, { align: 'center' }); y += 4;
+  if (last.withPouce) {
+    const lines = last.pouce.map((l, i) => (i === 0 ? 'Coup de pouce : ' + l[0] : l[0] + l[1]));
+    const h = 4 + lines.length * 5.5; doc.setLineWidth(0.5); doc.roundedRect(X, y, W, h, 2, 2); doc.setFontSize(11);
+    lines.forEach((t, i) => { doc.setFont('times', i === 0 ? 'bold' : 'normal'); doc.text(t, X + 4, y + 6 + i * 5.5); }); y += h + 3;
+  }
+  if (last.withTab) {
+    const rows = Math.min(10, Math.ceil((last.max + 1) / 10)), cw = 11, ch = 6, x0 = 105 - cw * 5; doc.setLineWidth(0.2); doc.setFontSize(10);
+    for (let d = 0; d < rows; d++) for (let u = 0; u < 10; u++) {
+      if (u === 0) { doc.setFillColor(217, 217, 217); doc.rect(x0, y + d * ch, cw, ch, 'FD'); doc.setFont('times', 'bold'); } else { doc.rect(x0 + u * cw, y + d * ch, cw, ch); doc.setFont('times', 'normal'); }
+      doc.text(String(d * 10 + u), x0 + u * cw + cw / 2, y + d * ch + 4.2, { align: 'center' });
+    }
+    y += rows * ch + 3;
+  }
+  const cellH = last.withTab && last.max > 49 ? 9 : 11;
+  last.sections.forEach(s => {
+    doc.setFont('times', 'bold'); doc.setFontSize(12); doc.text(s.title, X, y + 4); y += 6;
+    doc.setFont('times', 'normal'); doc.setFontSize(15); doc.setLineWidth(0.3);
+    for (let r = 0; r < Math.ceil(s.items.length / 2); r++) {
+      for (let c = 0; c < 2; c++) { const it = s.items[r * 2 + c]; doc.rect(X + c * W / 2, y, W / 2, cellH); if (it) doc.text(it.prefix + (last.showC ? it.answer : '______') + it.suffix, X + c * W / 2 + W / 4, y + cellH / 2 + 2, { align: 'center' }); }
+      y += cellH;
+    }
+    y += 2;
+  });
+  saveFile('Soutien-' + last.type + '-' + last.N + '.pdf', doc.output('blob'), 'application/pdf');
+});
+syncLabels(); generate(true);
+</script>
+<script data-goatcounter="https://euryale.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

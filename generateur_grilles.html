@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Générateur de grilles — Calcul mental CE1</title>
+<style>
+:root {
+  --navy: #14315C;
+  --blue: #1F6FE0;
+  --bg-page: #FBFBFE;
+  --red: #C00000;
+  --green: #1F8A3C;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --navy: #DCE6F5; --blue: #6EA8F5; --bg-page: #14171C; }
+}
+:root[data-theme="dark"] { --navy: #DCE6F5; --blue: #6EA8F5; --bg-page: #14171C; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: "Times New Roman", Georgia, serif;
+  background: var(--bg-page);
+  color: #111;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { color: #eee; } }
+:root[data-theme="dark"] body { color: #eee; }
+.controls {
+  font-family: Arial, sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.field select, .field input[type=number] {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid #999;
+  border-radius: 6px;
+  background: white;
+  color: #111;
+}
+button {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--blue);
+  background: var(--blue);
+  color: white;
+  cursor: pointer;
+}
+button.secondary { background: white; color: var(--blue); }
+button.verify { background: var(--green); border-color: var(--green); }
+.score {
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px;
+  min-height: 24px;
+}
+.sheet { max-width: 900px; margin: 0 auto; padding: 16px; }
+table.head { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+table.head td { border: 2px solid #000; padding: 8px 12px; font-weight: bold; font-size: 16px; color: #111; }
+.titre { text-align: center; font-weight: bold; font-size: 20px; color: var(--navy); padding: 6px; border: 2px solid #000; border-top: none; }
+.objectif { text-align: center; font-size: 13px; margin: 4px 0 10px; }
+.section-title { text-align: center; font-weight: bold; font-size: 15px; color: var(--navy); margin: 22px 0 6px; }
+table.grid { width: 100%; border-collapse: collapse; margin-bottom: 5px; table-layout: fixed; }
+table.grid td { border: 1px solid #000; padding: 0 4px; text-align: center; font-size: 16px; color: #111; height: 1.05cm; }
+.ans {
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 16px;
+  width: 3.2em;
+  text-align: center;
+  border: none;
+  border-bottom: 1.5px solid #333;
+  background: transparent;
+  color: inherit;
+  padding: 2px 0;
+}
+.ans:focus { outline: 1px solid var(--blue); }
+.ans.correct { color: var(--green); font-weight: bold; border-bottom-color: var(--green); }
+.ans.wrong { color: var(--red); font-weight: bold; border-bottom-color: var(--red); background: rgba(192,0,0,0.08); }
+.corrige-blank { font-weight: bold; }
+.mini-chrono { font-family: Arial, sans-serif; font-weight: bold; font-size: 13px; color: var(--blue); margin-left: 8px; }
+.mini-chrono.overtime { color: var(--green); }
+.mini-chrono.pending { color: #999; }
+.mini-btn {
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--blue);
+  background: var(--blue);
+  color: white;
+  cursor: pointer;
+}
+.mini-btn.secondary { background: white; color: var(--blue); }
+.mini-score { font-family: Arial, sans-serif; font-weight: bold; font-size: 13px; margin-left: 8px; color: var(--navy); }
+.niv-acquis { color: var(--green); }
+.niv-encours { color: #B45F06; }
+.niv-non { color: var(--red); }
+.niv-fluence-tag { font-weight: normal; color: #555; }
+@media print { .mini-btn, .mini-score { display: none; } }
+@media print { .mini-chrono { display: none; } }
+@media print {
+  .controls, .score { display: none; }
+  .sheet { max-width: none; padding: 6px; }
+  body { background: white; color: #000; }
+  .ans { border-bottom: 1px solid #333; }
+  @page { size: A4 portrait; margin: 8mm; }
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="controls">
+  <div class="field">
+    <label>Type de fiche</label>
+    <select id="type">
+      <option value="table_stricte">Table stricte (sans/avec passage + mélange)</option>
+      <option value="terme_manquant">Terme manquant</option>
+      <option value="soustraction_associee">Soustraction associée</option>
+      <option value="defi_vitesse_add">Défi vitesse — additions uniquement</option>
+      <option value="defi_vitesse_sub">Défi vitesse — soustractions uniquement</option>
+      <option value="defi_vitesse">Défi vitesse (3 manches de 18, mélangé)</option>
+      <option value="bloc_unique_add">Bloc unique — additions uniquement</option>
+      <option value="bloc_unique_sub">Bloc unique — soustractions uniquement</option>
+      <option value="bloc_unique">Bloc unique mélangé (40, type micetf)</option>
+      <option value="doubles">Doubles (bloc unique, jusqu'à N)</option>
+      <option value="presque_doubles">Presque-doubles (bloc unique, jusqu'à N)</option>
+      <option value="defi_vitesse_doubles">Défi vitesse — doubles (3 manches de 18, jusqu'à N)</option>
+      <option value="defi_vitesse_presque_doubles">Défi vitesse — presque-doubles (3 manches de 18, jusqu'à N)</option>
+      <option value="mult_bloc_unique">Table de multiplication (bloc unique, de 0 à 10)</option>
+      <option value="defi_vitesse_mult">Défi vitesse — table de multiplication (3 manches de 18, de 0 à 10)</option>
+    </select>
+  </div>
+  <div class="field">
+    <label id="labelN">Table / N</label>
+    <input type="number" id="tableN" value="2" min="1" max="100" style="width:70px">
+  </div>
+  <div class="field">
+    <label><input type="checkbox" id="corrige"> Afficher le corrigé (au lieu de la saisie)</label>
+  </div>
+  <button id="btnGen">Générer une nouvelle grille</button>
+  <button id="btnPrint" class="secondary">Imprimer</button>
+  <button id="btnDownload" class="secondary">Télécharger la grille (HTML)</button>
+  <button id="btnDownloadPdf" class="secondary">Télécharger en PDF</button>
+  <button id="btnChronoReset" type="button" class="secondary">Réinitialiser les chronos</button>
+</div>
+
+<div class="sheet" id="sheet"></div>
+
+<script>
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(rng, arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function selectDispersed(rng, values, count) {
+  const pool = shuffle(rng, values);
+  const n = pool.length;
+  if (n >= count) return pool.slice(0, count);
+  const base = Math.floor(count / n);
+  const rem = count % n;
+  const order = shuffle(rng, pool.map((_, i) => i));
+  const bonus = new Set(order.slice(0, rem));
+  const groups = pool.map((v, i) => Array(base + (bonus.has(i) ? 1 : 0)).fill(v));
+  const result = [];
+  let remaining = groups.reduce((s, g) => s + g.length, 0);
+  const cursors = groups.map(() => 0);
+  while (remaining > 0) {
+    for (let gi = 0; gi < groups.length && remaining > 0; gi++) {
+      if (cursors[gi] < groups[gi].length) {
+        result.push(groups[gi][cursors[gi]]);
+        cursors[gi]++;
+        remaining--;
+      }
+    }
+  }
+  return result;
+}
+const DIZAINES = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+function buildCombos(rng, units, dizaines) {
+  const combos = [];
+  for (const u of units) for (const d of dizaines) combos.push({ unit: u, dizaine: d });
+  return shuffle(rng, combos);
+}
+function selectDispersedCombos(rng, units, count) {
+  const combos = buildCombos(rng, units, DIZAINES);
+  const n = combos.length;
+  if (n >= count) return combos.slice(0, count);
+  const base = Math.floor(count / n);
+  const rem = count % n;
+  const order = shuffle(rng, combos.map((_, i) => i));
+  const bonus = new Set(order.slice(0, rem));
+  const groups = combos.map((c, i) => Array(base + (bonus.has(i) ? 1 : 0)).fill(c));
+  const result = [];
+  let remaining = groups.reduce((s, g) => s + g.length, 0);
+  const cursors = groups.map(() => 0);
+  while (remaining > 0) {
+    for (let gi = 0; gi < groups.length && remaining > 0; gi++) {
+      if (cursors[gi] < groups[gi].length) {
+        result.push(groups[gi][cursors[gi]]);
+        cursors[gi]++;
+        remaining--;
+      }
+    }
+  }
+  return result;
+}
+function unitsSansPassage(n) { const out = []; for (let u = 0; u <= 9; u++) if (u + n < 10) out.push(u); return out; }
+function unitsAvecPassage(n) { const out = []; for (let u = 0; u <= 9; u++) if (u + n >= 10) out.push(u); return out; }
+
+async function saveFile(filename, data, mimeType) {
+  const hasClaudeRuntime = (typeof claude !== 'undefined') && claude && typeof claude.use === 'function';
+  if (hasClaudeRuntime) {
+    const downloads = await claude.use('downloads');
+    if (downloads) {
+      await downloads.save({ filename: filename, data: data });
+      return 'claude';
+    }
+  }
+  const blob = (data instanceof Blob) ? data : new Blob([data], { type: mimeType || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  return 'browser';
+}
+
+function renderHead(objectif) {
+  return '<table class="head"><tr><td style="width:50%">Prénom : </td><td style="width:50%">Date : </td></tr></table>' +
+    '<div class="titre">CALCUL MENTAL</div>' +
+    '<div class="objectif">' + objectif + '</div>';
+}
+function renderGrid(items, cols, showCorrige, sectionId, sectionIdx) {
+  let html = '<table class="grid">';
+  const rows = Math.ceil(items.length / cols);
+  for (let r = 0; r < rows; r++) {
+    html += '<tr>';
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const it = items[idx];
+      if (!it) { html += '<td></td>'; continue; }
+      if (showCorrige) {
+        html += '<td>' + it.prefix + '<span class="corrige-blank">' + it.answer + '</span>' + it.suffix + '</td>';
+      } else {
+        const inputId = 'inp_' + sectionId + '_' + idx;
+        html += '<td>' + it.prefix +
+          '<input type="text" inputmode="numeric" autocomplete="off" class="ans" id="' + inputId + '" data-section="' + sectionIdx + '" data-answer="' + it.answer + '">' +
+          it.suffix + '</td>';
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  return html;
+}
+
+function makeItemStrict(rng, unit, dizaine, N) {
+  const a = dizaine + unit;
+  const sum = a + N;
+  if (rng() < 0.5) return { prefix: a + ' + ' + N + ' = ', suffix: '', answer: String(sum) };
+  return { prefix: N + ' + ' + a + ' = ', suffix: '', answer: String(sum) };
+}
+function makeItemTermeManquant(rng, unit, dizaine, N) {
+  const a = dizaine + unit;
+  const sum = a + N;
+  if (rng() < 0.5) return { prefix: '', suffix: ' + ' + N + ' = ' + sum, answer: String(a) };
+  return { prefix: N + ' + ', suffix: ' = ' + sum, answer: String(a) };
+}
+function makeItemSoustraction(rng, unit, dizaine, N) {
+  const a = dizaine + unit;
+  const s = a + N;
+  return { prefix: s + ' \u2212 ' + N + ' = ', suffix: '', answer: String(a) };
+}
+
+function genSection(rng, units, count, N, maker) {
+  const combos = selectDispersedCombos(rng, units, count);
+  return combos.map(c => maker(rng, c.unit, c.dizaine, N));
+}
+
+function buildTripleBlock(N, seed, maker, objectifLabel) {
+  const rng = mulberry32(seed);
+  const itemsSans = genSection(rng, unitsSansPassage(N), 20, N, maker);
+  const itemsAvec = genSection(rng, unitsAvecPassage(N), 20, N, maker);
+  const allUnits = [...unitsSansPassage(N), ...unitsAvecPassage(N)];
+  const itemsMelange = genSection(rng, allUnits, 32, N, maker);
+  return { itemsSans, itemsAvec, itemsMelange, objectifLabel };
+}
+
+const SEC_PER_ITEM_ADD = 4.5;
+const SEC_PER_ITEM_SUB = 6; // ajust\u00e9 empiriquement (ratio ~1.3 observ\u00e9 sur Ex8/Ex16 national, \u00e0 affiner sur l'ann\u00e9e)
+function sectionDuration(nItems, secPerItem) {
+  const sec = secPerItem || SEC_PER_ITEM_ADD;
+  return Math.max(30, Math.round(nItems * sec / 30) * 30);
+}
+function formatMMSS(totalSec) {
+  const s = Math.max(0, totalSec);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
+function sectionControlsHtml(title, idx, duration) {
+  const titlePart = title ? title + ' ' : '';
+  return '<div class="section-title">' + titlePart +
+    '<span class="mini-chrono" id="chrono_' + idx + '">' + formatMMSS(duration) + '</span>' +
+    ' <button type="button" class="mini-btn" data-role="start" data-idx="' + idx + '">\u25b6 D\u00e9marrer</button>' +
+    ' <button type="button" class="mini-btn secondary" data-role="stop" data-idx="' + idx + '">\u23f9 Arr\u00eat</button>' +
+    ' <button type="button" class="mini-btn secondary" data-role="verify" data-idx="' + idx + '">\u2713 V\u00e9rifier</button>' +
+    ' <span class="mini-score" id="score_' + idx + '"></span>' +
+    '</div>';
+}
+
+function renderTriplePage(N, block, sansLabel, avecLabel, showCorrige, secPerItem) {
+  const dSans = sectionDuration(block.itemsSans.length, secPerItem);
+  const dAvec = sectionDuration(block.itemsAvec.length, secPerItem);
+  const dMel = sectionDuration(block.itemsMelange.length, secPerItem);
+  let html = renderHead('OBJECTIF : ' + block.objectifLabel + ' ' + N + '.');
+  html += sectionControlsHtml(sansLabel, 0, dSans);
+  html += renderGrid(block.itemsSans, 4, showCorrige, 's1', 0);
+  html += sectionControlsHtml(avecLabel, 1, dAvec);
+  html += renderGrid(block.itemsAvec, 4, showCorrige, 's2', 1);
+  html += sectionControlsHtml('M\u00e9lange', 2, dMel);
+  html += renderGrid(block.itemsMelange, 4, showCorrige, 's3', 2);
+  return html;
+}
+
+function genDefiVitesse(N, seed, op) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  if (op === 'add') { for (let i = 0; i <= 89 - N; i++) nums.push(i); }
+  else if (op === 'sub') { for (let i = N; i <= 89; i++) nums.push(i); }
+  else { for (let i = N; i <= 89; i++) nums.push(i); }
+  function round() {
+    const vals = selectDispersed(rng, nums, 18);
+    return vals.map(n => {
+      const doAdd = op === 'add' ? true : (op === 'sub' ? false : rng() < 0.5);
+      return doAdd
+        ? { prefix: n + ' + ' + N + ' = ', suffix: '', answer: String(n + N) }
+        : { prefix: n + ' \u2212 ' + N + ' = ', suffix: '', answer: String(n - N) };
+    });
+  }
+  return [round(), round(), round()];
+}
+
+function genBlocUnique(N, seed, op) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  if (op === 'add') { for (let i = 0; i <= 90 - N; i++) nums.push(i); }
+  else if (op === 'sub') { for (let i = N; i <= 90; i++) nums.push(i); }
+  else { for (let i = N; i <= 90; i++) nums.push(i); }
+  const vals = selectDispersed(rng, nums, 40);
+  return vals.map(n => {
+    const doAdd = op === 'add' ? true : (op === 'sub' ? false : rng() < 0.5);
+    return doAdd
+      ? { prefix: n + ' + ' + N + ' = ', suffix: '', answer: String(n + N) }
+      : { prefix: n + ' \u2212 ' + N + ' = ', suffix: '', answer: String(n - N) };
+  });
+}
+
+function genDoublesBloc(N, seed) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  for (let i = 0; i <= N; i++) nums.push(i);
+  const vals = selectDispersed(rng, nums, 40);
+  return vals.map(n => ({ prefix: n + ' + ' + n + ' = ', suffix: '', answer: String(n * 2) }));
+}
+
+function genPresqueDoublesBloc(N, seed) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  for (let i = 0; i <= Math.max(0, N - 1); i++) nums.push(i);
+  const vals = selectDispersed(rng, nums, 40);
+  return vals.map(n => {
+    const swap = rng() < 0.5;
+    const a = swap ? n + 1 : n, b = swap ? n : n + 1;
+    return { prefix: a + ' + ' + b + ' = ', suffix: '', answer: String(a + b) };
+  });
+}
+
+function genDefiVitesseDoubles(N, seed) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  for (let i = 0; i <= N; i++) nums.push(i);
+  function round() {
+    const vals = selectDispersed(rng, nums, 18);
+    return vals.map(n => ({ prefix: n + ' + ' + n + ' = ', suffix: '', answer: String(n * 2) }));
+  }
+  return [round(), round(), round()];
+}
+
+function genDefiVitessePresqueDoubles(N, seed) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  for (let i = 0; i <= Math.max(0, N - 1); i++) nums.push(i);
+  function round() {
+    const vals = selectDispersed(rng, nums, 18);
+    return vals.map(n => {
+      const swap = rng() < 0.5;
+      const a = swap ? n + 1 : n, b = swap ? n : n + 1;
+      return { prefix: a + ' + ' + b + ' = ', suffix: '', answer: String(a + b) };
+    });
+  }
+  return [round(), round(), round()];
+}
+
+function genMultBloc(N, seed) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  for (let i = 0; i <= 10; i++) nums.push(i);
+  const vals = selectDispersed(rng, nums, 40);
+  return vals.map(k => {
+    const swap = rng() < 0.5;
+    return swap
+      ? { prefix: N + ' × ' + k + ' = ', suffix: '', answer: String(N * k) }
+      : { prefix: k + ' × ' + N + ' = ', suffix: '', answer: String(N * k) };
+  });
+}
+
+function genDefiVitesseMult(N, seed) {
+  const rng = mulberry32(seed);
+  const nums = [];
+  for (let i = 0; i <= 10; i++) nums.push(i);
+  function round() {
+    const vals = selectDispersed(rng, nums, 18);
+    return vals.map(k => {
+      const swap = rng() < 0.5;
+      return swap
+        ? { prefix: N + ' × ' + k + ' = ', suffix: '', answer: String(N * k) }
+        : { prefix: k + ' × ' + N + ' = ', suffix: '', answer: String(N * k) };
+    });
+  }
+  return [round(), round(), round()];
+}
+
+let lastGridData = null;
+let sectionTimers = [];
+
+function updateSectionTimerDisplay(idx) {
+  const el = document.getElementById('chrono_' + idx);
+  const t = sectionTimers[idx];
+  if (!el || !t) return;
+  if (t.stopped) {
+    el.textContent = formatMMSS(t.elapsed);
+    el.classList.toggle('overtime', t.overtime);
+    return;
+  }
+  if (!t.overtime) {
+    el.textContent = formatMMSS(t.target - t.elapsed);
+    el.classList.remove('overtime');
+  } else {
+    el.textContent = '+' + formatMMSS(t.elapsed - t.target);
+    el.classList.add('overtime');
+  }
+}
+function updateStartButtonLabel(idx) {
+  const btn = document.querySelector('#sheet button.mini-btn[data-role="start"][data-idx="' + idx + '"]');
+  if (!btn) return;
+  const t = sectionTimers[idx];
+  if (!t) return;
+  if (t.running) { btn.textContent = '\u23f8 Pause'; return; }
+  if (t.stopped) { btn.textContent = '\u25b6 Red\u00e9marrer'; return; }
+  btn.textContent = t.elapsed > 0 ? '\u25b6 Reprendre' : '\u25b6 D\u00e9marrer';
+}
+function resetChrono() {
+  sectionTimers.forEach(t => { if (t.interval) clearInterval(t.interval); });
+  sectionTimers = lastGridData
+    ? lastGridData.sections.map(s => ({ elapsed: 0, target: s.duration, overtime: false, running: false, stopped: false, interval: null }))
+    : [];
+  sectionTimers.forEach((t, idx) => { updateSectionTimerDisplay(idx); updateStartButtonLabel(idx); });
+}
+function toggleSectionTimer(idx) {
+  const t = sectionTimers[idx];
+  if (!t) return;
+  if (t.running) {
+    clearInterval(t.interval);
+    t.running = false;
+    updateStartButtonLabel(idx);
+    return;
+  }
+  if (t.stopped) {
+    t.elapsed = 0;
+    t.overtime = false;
+    t.stopped = false;
+    updateSectionTimerDisplay(idx);
+    document.querySelectorAll('#sheet input.ans[data-section="' + idx + '"]').forEach(inp => {
+      inp.value = '';
+      inp.classList.remove('correct', 'wrong');
+    });
+    const scoreEl = document.getElementById('score_' + idx);
+    if (scoreEl) scoreEl.innerHTML = '';
+  }
+  t.running = true;
+  updateStartButtonLabel(idx);
+  t.interval = setInterval(function () {
+    t.elapsed++;
+    if (!t.overtime && t.elapsed >= t.target) t.overtime = true;
+    updateSectionTimerDisplay(idx);
+  }, 1000);
+  const firstInput = document.querySelector('#sheet input.ans[data-section="' + idx + '"]');
+  if (firstInput) { firstInput.focus(); firstInput.select(); }
+}
+function stopSectionTimer(idx) {
+  const t = sectionTimers[idx];
+  if (!t) return;
+  clearInterval(t.interval);
+  t.running = false;
+  t.stopped = true;
+  updateSectionTimerDisplay(idx);
+  updateStartButtonLabel(idx);
+}
+
+function generate() {
+  const type = document.getElementById('type').value;
+  const N = parseInt(document.getElementById('tableN').value, 10) || 2;
+  const showCorrige = document.getElementById('corrige').checked;
+  const seed = Math.floor(Math.random() * 1000000);
+  const sheet = document.getElementById('sheet');
+  let html = '';
+  let objectifText = '';
+  let sections = [];
+
+  if (type === 'table_stricte') {
+    const block = buildTripleBlock(N, seed, makeItemStrict, 'calculer autour de');
+    objectifText = 'OBJECTIF : ' + block.objectifLabel + ' ' + N + '.';
+    sections = [
+      { title: 'Sans passage de dizaine', items: block.itemsSans, cols: 4, duration: sectionDuration(block.itemsSans.length) },
+      { title: 'Avec passage de dizaine', items: block.itemsAvec, cols: 4, duration: sectionDuration(block.itemsAvec.length) },
+      { title: 'Mélange', items: block.itemsMelange, cols: 4, duration: sectionDuration(block.itemsMelange.length) },
+    ];
+    html = renderTriplePage(N, block, 'Sans passage de dizaine', 'Avec passage de dizaine', showCorrige);
+  } else if (type === 'terme_manquant') {
+    const block = buildTripleBlock(N, seed, makeItemTermeManquant, 'trouver le terme manquant autour de');
+    objectifText = 'OBJECTIF : ' + block.objectifLabel + ' ' + N + '.';
+    sections = [
+      { title: 'Sans passage de dizaine', items: block.itemsSans, cols: 4, duration: sectionDuration(block.itemsSans.length) },
+      { title: 'Avec passage de dizaine', items: block.itemsAvec, cols: 4, duration: sectionDuration(block.itemsAvec.length) },
+      { title: 'Mélange', items: block.itemsMelange, cols: 4, duration: sectionDuration(block.itemsMelange.length) },
+    ];
+    html = renderTriplePage(N, block, 'Sans passage de dizaine', 'Avec passage de dizaine', showCorrige);
+  } else if (type === 'soustraction_associee') {
+    const rng = mulberry32(seed);
+    const itemsSans = genSection(rng, unitsSansPassage(N), 20, N, makeItemSoustraction);
+    const itemsAvec = genSection(rng, unitsAvecPassage(N), 20, N, makeItemSoustraction);
+    const allUnits = [...unitsSansPassage(N), ...unitsAvecPassage(N)];
+    const itemsMelange = genSection(rng, allUnits, 32, N, makeItemSoustraction);
+    const block = { itemsSans, itemsAvec, itemsMelange, objectifLabel: 'soustraire' };
+    objectifText = 'OBJECTIF : ' + block.objectifLabel + ' ' + N + '.';
+    sections = [
+      { title: 'Sans emprunt', items: itemsSans, cols: 4, duration: sectionDuration(itemsSans.length, SEC_PER_ITEM_SUB) },
+      { title: 'Avec emprunt', items: itemsAvec, cols: 4, duration: sectionDuration(itemsAvec.length, SEC_PER_ITEM_SUB) },
+      { title: 'Mélange', items: itemsMelange, cols: 4, duration: sectionDuration(itemsMelange.length, SEC_PER_ITEM_SUB) },
+    ];
+    html = renderTriplePage(N, block, 'Sans emprunt', 'Avec emprunt', showCorrige, SEC_PER_ITEM_SUB);
+  } else if (type === 'defi_vitesse' || type === 'defi_vitesse_add' || type === 'defi_vitesse_sub') {
+    const op = type === 'defi_vitesse_add' ? 'add' : (type === 'defi_vitesse_sub' ? 'sub' : 'mixed');
+    const rounds = genDefiVitesse(N, seed, op);
+    const roundDuration = op === 'sub' ? sectionDuration(18, SEC_PER_ITEM_SUB) : 60;
+    const opLabel = op === 'add' ? ' (additions uniquement)' : (op === 'sub' ? ' (soustractions uniquement)' : '');
+    objectifText = 'OBJECTIF : d\u00e9fi vitesse autour de ' + N + opLabel + ' (' + formatMMSS(roundDuration) + ' par manche).';
+    html = renderHead(objectifText);
+    sections = rounds.map((items, i) => ({ title: 'Manche ' + (i + 1), items, cols: 3, duration: roundDuration }));
+    rounds.forEach((items, i) => {
+      html += sectionControlsHtml('Manche ' + (i + 1), i, roundDuration);
+      html += renderGrid(items, 3, showCorrige, 'r' + i, i);
+    });
+  } else if (type === 'defi_vitesse_doubles' || type === 'defi_vitesse_presque_doubles') {
+    const rounds = type === 'defi_vitesse_doubles' ? genDefiVitesseDoubles(N, seed) : genDefiVitessePresqueDoubles(N, seed);
+    const roundDuration = 60;
+    const label = type === 'defi_vitesse_doubles' ? ('doubles jusqu’à ' + N) : ('presque-doubles jusqu’à ' + N);
+    objectifText = 'OBJECTIF : défi vitesse — ' + label + ' (' + formatMMSS(roundDuration) + ' par manche).';
+    html = renderHead(objectifText);
+    sections = rounds.map((items, i) => ({ title: 'Manche ' + (i + 1), items, cols: 3, duration: roundDuration }));
+    rounds.forEach((items, i) => {
+      html += sectionControlsHtml('Manche ' + (i + 1), i, roundDuration);
+      html += renderGrid(items, 3, showCorrige, 'r' + i, i);
+    });
+  } else if (type === 'defi_vitesse_mult') {
+    const rounds = genDefiVitesseMult(N, seed);
+    const roundDuration = 60;
+    objectifText = 'OBJECTIF : défi vitesse — table de ' + N + ' (' + formatMMSS(roundDuration) + ' par manche).';
+    html = renderHead(objectifText);
+    sections = rounds.map((items, i) => ({ title: 'Manche ' + (i + 1), items, cols: 3, duration: roundDuration }));
+    rounds.forEach((items, i) => {
+      html += sectionControlsHtml('Manche ' + (i + 1), i, roundDuration);
+      html += renderGrid(items, 3, showCorrige, 'r' + i, i);
+    });
+  } else if (type === 'bloc_unique' || type === 'bloc_unique_add' || type === 'bloc_unique_sub') {
+    const op = type === 'bloc_unique_add' ? 'add' : (type === 'bloc_unique_sub' ? 'sub' : 'mixed');
+    const items = genBlocUnique(N, seed, op);
+    const opLabel = op === 'add' ? ' (additions uniquement)' : (op === 'sub' ? ' (soustractions uniquement)' : '');
+    objectifText = 'OBJECTIF : calculer autour de ' + N + opLabel + '.';
+    const dur = sectionDuration(items.length, op === 'sub' ? SEC_PER_ITEM_SUB : SEC_PER_ITEM_ADD);
+    html = renderHead(objectifText);
+    html += sectionControlsHtml('', 0, dur);
+    html += renderGrid(items, 4, showCorrige, 'b0', 0);
+    sections = [{ title: null, items, cols: 4, duration: dur }];
+  } else if (type === 'doubles' || type === 'presque_doubles') {
+    const items = type === 'doubles' ? genDoublesBloc(N, seed) : genPresqueDoublesBloc(N, seed);
+    const label = type === 'doubles' ? ('doubles jusqu’à ' + N) : ('presque-doubles jusqu’à ' + N);
+    objectifText = 'OBJECTIF : calculer des ' + label + '.';
+    const dur = sectionDuration(items.length, SEC_PER_ITEM_ADD);
+    html = renderHead(objectifText);
+    html += sectionControlsHtml('', 0, dur);
+    html += renderGrid(items, 4, showCorrige, 'b0', 0);
+    sections = [{ title: null, items, cols: 4, duration: dur }];
+  } else if (type === 'mult_bloc_unique') {
+    const items = genMultBloc(N, seed);
+    objectifText = 'OBJECTIF : connaître la table de ' + N + '.';
+    const dur = sectionDuration(items.length, SEC_PER_ITEM_ADD);
+    html = renderHead(objectifText);
+    html += sectionControlsHtml('', 0, dur);
+    html += renderGrid(items, 4, showCorrige, 'b0', 0);
+    sections = [{ title: null, items, cols: 4, duration: dur }];
+  }
+
+  sheet.innerHTML = html;
+  lastGridData = { type, N, showCorrige, objectifText, sections };
+  resetChrono();
+}
+
+function niveauAcquisition(correct, total) {
+  if (total === 0) return { label: '', cls: '' };
+  const pct = correct / total;
+  if (pct >= 0.95) return { label: 'Acquis', cls: 'niv-acquis' };
+  if (pct >= 0.50) return { label: "En cours d'acquisition", cls: 'niv-encours' };
+  return { label: 'Non acquis', cls: 'niv-non' };
+}
+function niveauFluence(correct, total) {
+  if (total === 0) return { label: '', cls: '' };
+  const pct = correct / total;
+  if (pct >= 0.90) return { label: 'Automatis\u00e9', cls: 'niv-acquis' };
+  if (pct >= 0.45) return { label: "En cours d'automatisation", cls: 'niv-encours' };
+  return { label: 'Non automatis\u00e9', cls: 'niv-non' };
+}
+function verifySection(idx) {
+  if (!lastGridData || lastGridData.showCorrige) return;
+  const inputs = document.querySelectorAll('#sheet input.ans[data-section="' + idx + '"]');
+  let correct = 0, total = 0;
+  inputs.forEach(inp => {
+    total++;
+    const val = inp.value.trim();
+    inp.classList.remove('correct', 'wrong');
+    if (val === '') return;
+    if (val === inp.dataset.answer) {
+      inp.classList.add('correct');
+      correct++;
+    } else {
+      inp.classList.add('wrong');
+    }
+  });
+  const scoreEl = document.getElementById('score_' + idx);
+  if (!scoreEl) return;
+  const niv = niveauAcquisition(correct, total);
+  let html = correct + ' / ' + total + (niv.label ? ' \u2014 <span class="' + niv.cls + '">' + niv.label + '</span>' : '');
+
+  const t = sectionTimers[idx];
+  if (t && t.elapsed > 0) {
+    if (!t.overtime) {
+      const fl = niveauFluence(correct, total);
+      html += ' <span class="niv-fluence-tag">| fluence : <span class="' + fl.cls + '">' + fl.label + '</span></span>';
+    } else {
+      html += ' <span class="niv-fluence-tag">| fluence non mesur\u00e9e (temps d\u00e9pass\u00e9)</span>';
+    }
+  }
+  scoreEl.innerHTML = html;
+}
+
+function drawPdfFromData(gridData) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const marginX = 8;
+  let y = 10;
+  const pageWidth = 210;
+  const contentWidth = pageWidth - marginX * 2;
+
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.3);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.rect(marginX, y, contentWidth / 2, 9);
+  doc.rect(marginX + contentWidth / 2, y, contentWidth / 2, 9);
+  doc.text('Pr\u00e9nom :', marginX + 2, y + 6);
+  doc.text('Date :', marginX + contentWidth / 2 + 2, y + 6);
+  y += 9;
+  doc.rect(marginX, y, contentWidth, 8);
+  doc.setFontSize(14);
+  doc.text('CALCUL MENTAL', pageWidth / 2, y + 5.5, { align: 'center' });
+  y += 8 + 5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(gridData.objectifText, pageWidth / 2, y, { align: 'center' });
+  y += 6;
+
+  gridData.sections.forEach((section) => {
+    if (section.title) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(section.title, pageWidth / 2, y, { align: 'center' });
+      y += 5.5;
+    }
+    const cols = section.cols;
+    const cellW = contentWidth / cols;
+    const cellH = 10.5;
+    const rows = Math.ceil(section.items.length / cols);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const idx = r * cols + c;
+        const it = section.items[idx];
+        const x = marginX + c * cellW;
+        doc.rect(x, y, cellW, cellH);
+        if (it) {
+          const txt = gridData.showCorrige ? (it.prefix + it.answer + it.suffix) : (it.prefix + '____' + it.suffix);
+          doc.text(txt, x + cellW / 2, y + cellH / 2 + 1.5, { align: 'center' });
+        }
+      }
+      y += cellH;
+    }
+    y += 3;
+  });
+
+  return doc;
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  const target = e.target;
+  if (!target || !target.matches || !target.matches('input.ans')) return;
+  e.preventDefault();
+  const inputs = Array.from(document.querySelectorAll('#sheet input.ans'));
+  const idx = inputs.indexOf(target);
+  if (idx >= 0 && idx < inputs.length - 1) {
+    inputs[idx + 1].focus();
+    inputs[idx + 1].select();
+  }
+});
+
+document.getElementById('sheet').addEventListener('click', function (e) {
+  const btn = e.target.closest ? e.target.closest('button.mini-btn') : null;
+  if (!btn) return;
+  const idx = parseInt(btn.dataset.idx, 10);
+  if (btn.dataset.role === 'start') toggleSectionTimer(idx);
+  else if (btn.dataset.role === 'stop') stopSectionTimer(idx);
+  else if (btn.dataset.role === 'verify') verifySection(idx);
+});
+
+document.getElementById('btnGen').addEventListener('click', generate);
+document.getElementById('corrige').addEventListener('change', generate);
+const JUSQUA_TYPES = ['doubles', 'presque_doubles', 'defi_vitesse_doubles', 'defi_vitesse_presque_doubles'];
+const MULT_TYPES = ['mult_bloc_unique', 'defi_vitesse_mult'];
+document.getElementById('type').addEventListener('change', function () {
+  const type = this.value;
+  const labelN = document.getElementById('labelN');
+  const tableN = document.getElementById('tableN');
+  if (JUSQUA_TYPES.includes(type)) {
+    labelN.textContent = 'Jusqu’à';
+    if (tableN.value === '2') tableN.value = '20';
+    if (tableN.value === '10') tableN.value = '20';
+  } else if (MULT_TYPES.includes(type)) {
+    labelN.textContent = 'Table de';
+    if (tableN.value === '20') tableN.value = '2';
+  } else {
+    labelN.textContent = 'Table / N';
+    if (tableN.value === '20') tableN.value = '2';
+  }
+  generate();
+});
+document.getElementById('tableN').addEventListener('change', generate);
+document.getElementById('btnChronoReset').addEventListener('click', resetChrono);
+document.getElementById('btnPrint').addEventListener('click', function () { window.print(); });
+
+document.getElementById('btnDownload').addEventListener('click', async function () {
+  const btn = document.getElementById('btnDownload');
+  const original = btn.textContent;
+  const type = document.getElementById('type').value;
+  const N = document.getElementById('tableN').value;
+  const sheetHtml = document.getElementById('sheet').innerHTML;
+  const styleTag = document.querySelector('style').outerHTML;
+  const doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">' +
+    '<title>CalculMental-' + type + '-' + N + '</title>' + styleTag +
+    '</head><body><div class="sheet">' + sheetHtml + '</div></body></html>';
+  try {
+    await saveFile('CalculMental-' + type + '-' + N + '.html', doc, 'text/html');
+    btn.textContent = original;
+  } catch (e) {
+    if (e && e.code === 'declined') { btn.textContent = original; return; }
+    console.error('save (html) failed:', e);
+    btn.textContent = 'Échec : ' + (e && e.code ? e.code : (e && e.message ? e.message : 'erreur inconnue'));
+    setTimeout(function () { btn.textContent = original; }, 4000);
+  }
+});
+
+document.getElementById('btnDownloadPdf').addEventListener('click', async function () {
+  const btn = document.getElementById('btnDownloadPdf');
+  const original = btn.textContent;
+  const type = document.getElementById('type').value;
+  const N = document.getElementById('tableN').value;
+  const filename = 'CalculMental-' + type + '-' + N + '.pdf';
+
+  if (!lastGridData) { btn.textContent = 'G\u00e9n\u00e8re d\u2019abord une grille'; setTimeout(() => btn.textContent = original, 3000); return; }
+  if (typeof window.jspdf === 'undefined') {
+    console.error('jsPDF library not loaded');
+    btn.textContent = 'Échec : bibliothèque PDF non chargée';
+    setTimeout(function () { btn.textContent = original; }, 4000);
+    return;
+  }
+
+  let pdfBlob;
+  try {
+    const doc = drawPdfFromData(lastGridData);
+    pdfBlob = doc.output('blob');
+  } catch (e) {
+    console.error('jsPDF generation failed:', e);
+    btn.textContent = 'Échec g\u00e9n\u00e9ration : ' + (e && e.message ? e.message : 'erreur inconnue');
+    setTimeout(function () { btn.textContent = original; }, 4000);
+    return;
+  }
+
+  try {
+    await saveFile(filename, pdfBlob, 'application/pdf');
+    btn.textContent = original;
+  } catch (e) {
+    if (e && e.code === 'declined') { btn.textContent = original; return; }
+    console.error('save (pdf) failed:', e);
+    btn.textContent = 'Échec : ' + (e && e.code ? e.code : (e && e.message ? e.message : 'erreur inconnue'));
+    setTimeout(function () { btn.textContent = original; }, 4000);
+  }
+});
+
+generate();
+</script>
+<script data-goatcounter="https://euryale.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
