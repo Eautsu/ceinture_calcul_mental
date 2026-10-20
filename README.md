@@ -1,16 +1,11 @@
 # Générateurs de fiches de calcul mental — CE1
 
 Deux générateurs de fiches d'entraînement au calcul mental pour le CE1,
-conçus pour une pratique **quotidienne, courte et mesurée**, dans l'esprit du
-programme de mathématiques entré en vigueur à la rentrée 2025 (cycle 2,
-BOEN du 31 octobre 2024).
-
-- **Générateur de grilles** : l'entraînement de la classe, avec chrono.
-- **Générateur de soutien** : la même notion en version adaptée, sans chrono,
-  avec un coup de pouce, pour les élèves qui en ont besoin.
-
-Une fiche nouvelle à chaque clic, avec son corrigé, à imprimer, à télécharger
-(HTML ou PDF) ou à faire directement sur écran.
+pour une pratique **quotidienne, courte et mesurée**, dans l'esprit du
+programme 2025 (cycle 2, BOEN du 31 octobre 2024) : le **générateur de
+grilles** (l'entraînement de la classe, avec chrono) et le **générateur
+de soutien** (la même notion en version adaptée, sans chrono, avec un
+coup de pouce). Une fiche nouvelle à chaque clic, avec son corrigé.
 
 Site en ligne : <https://eautsu.github.io/ceintures_calcul_mental/>
 
