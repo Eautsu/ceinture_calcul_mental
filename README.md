@@ -7,7 +7,7 @@ grilles** (l'entraînement de la classe, avec chrono) et le **générateur
 de soutien** (la même notion en version adaptée, sans chrono, avec un
 coup de pouce). Une fiche nouvelle à chaque clic, avec son corrigé.
 
-Site en ligne : <https://eautsu.github.io/ceintures_calcul_mental/>
+Site en ligne : <https://eautsu.github.io/ceinture_calcul_mental/>
 
 ---
 
@@ -232,7 +232,7 @@ Aucun compte, aucune installation, aucune donnée personnelle collectée (seul
 un comptage anonyme des visites, sans cookie, via GoatCounter) : tout
 fonctionne dans le navigateur.
 
-- En ligne : <https://eautsu.github.io/ceintures_calcul_mental/>
+- En ligne : <https://eautsu.github.io/ceinture_calcul_mental/>
 - Hors ligne : télécharger les fichiers du dépôt et ouvrir `index.html`
   (l'export PDF demande une connexion pour charger la bibliothèque jsPDF ;
   « Imprimer → Enregistrer en PDF » fonctionne partout).
